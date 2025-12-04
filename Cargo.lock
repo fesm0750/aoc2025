@@ -5,3 +5,11 @@ version = 4
 [[package]]
 name = "aoc2025"
 version = "0.1.0"
+dependencies = [
+ "aoc_tools",
+]
+
+[[package]]
+name = "aoc_tools"
+version = "0.1.0"
+source = "git+https://github.com/fesm0750/aoc_tools#f4cd3dabce672567034338852a48862a58d75190"
