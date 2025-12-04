@@ -16,10 +16,24 @@ pub fn run() {
 
     let grid = Grid::with_borders(len_x, Tile::Empty, 1, iter);
 
-    println!("answer pt1: {}", pt1(&grid));
+    println!("answer pt1: {}", count_removable(&grid));
 }
 
-fn pt1(grid: &Grid<Tile>) -> u64 {
+fn count_removable(grid: &Grid<Tile>) -> u64 {
+    let len_x = grid.len_x - 1;
+    let len_y = grid.len_y - 1;
+
+    (1..len_x)
+        .flat_map(|x| (1..len_y).map(move |y| Pair::new(x, y)))
+        .filter(|&idx| is_accessible(grid, idx))
+        .count() as u64
+}
+
+fn is_accessible(grid: &Grid<Tile>, index: Pair<usize>) -> bool {
+    if grid[index] != Tile::PaperRoll {
+        return false;
+    }
+
     let mask: [Pair<i32>; 8] = [
         Pair::from_tuple((-1, -1)),
         Pair::from_tuple((0, -1)),
@@ -31,28 +45,14 @@ fn pt1(grid: &Grid<Tile>) -> u64 {
         Pair::from_tuple((1, 1)),
     ];
 
-    let len_x = grid.len_x - 1;
-    let len_y = grid.len_y - 1;
+    let count = mask
+        .iter()
+        .map(|&m| m + Pair::new(index.x as i32, index.y as i32))
+        .map(|i| grid[(i.x as usize, i.y as usize)])
+        .filter(|&v| v == Tile::PaperRoll)
+        .count();
 
-    let mut count_accessible = 0;
-    for x in 1..len_x {
-        for y in 1..len_y {
-            if grid[(x, y)] == Tile::PaperRoll {
-                let count = mask
-                    .iter()
-                    .map(|&m| m + Pair::new(x as i32, y as i32))
-                    .map(|i| grid[(i.x as usize, i.y as usize)])
-                    .filter(|&v| v == Tile::PaperRoll)
-                    .count();
-
-                if count < 4 {
-                    count_accessible += 1;
-                }
-            }
-        }
-    }
-
-    count_accessible as u64
+    count < 4
 }
 
 #[derive(Clone, Copy, PartialEq)]
