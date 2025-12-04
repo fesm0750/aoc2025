@@ -11,5 +11,5 @@ dependencies = [
 
 [[package]]
 name = "aoc_tools"
-version = "0.1.0"
-source = "git+https://github.com/fesm0750/aoc_tools#f4cd3dabce672567034338852a48862a58d75190"
+version = "0.1.1"
+source = "git+https://github.com/fesm0750/aoc_tools#da94c0da0594eb4f5541c68f1aaa8aa69f2e9e33"
