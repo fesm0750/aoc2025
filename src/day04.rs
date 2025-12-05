@@ -14,22 +14,32 @@ pub fn run() {
         .filter(|c| !c.is_whitespace())
         .filter_map(Tile::parse_char);
 
-    let grid = Grid::with_borders(len_x, Tile::Empty, 1, iter);
+    let mut grid = Grid::with_borders(len_x, Tile::Empty, 1, iter);
 
-    println!("answer pt1: {}", count_removable(&grid));
+    let mut n_removed = count_removable(&mut grid).unwrap();
+    remove(&mut grid);
+    println!("answer pt1: {}", n_removed);
+
+    while let Some(x) = count_removable(&mut grid) {
+        n_removed += x;
+        remove(&mut grid);
+    }
+    println!("answer pt2: {}", n_removed);
 }
 
-fn count_removable(grid: &Grid<Tile>) -> u64 {
+fn count_removable(grid: &mut Grid<Tile>) -> Option<u64> {
     let len_x = grid.len_x - 1;
     let len_y = grid.len_y - 1;
 
-    (1..len_x)
+    let count = (1..len_x)
         .flat_map(|x| (1..len_y).map(move |y| Pair::new(x, y)))
-        .filter(|&idx| is_accessible(grid, idx))
-        .count() as u64
+        .filter(|&idx| mark_removable(grid, idx))
+        .count() as u64;
+
+    if count > 0 { Some(count) } else { None }
 }
 
-fn is_accessible(grid: &Grid<Tile>, index: Pair<usize>) -> bool {
+fn mark_removable(grid: &mut Grid<Tile>, index: Pair<usize>) -> bool {
     if grid[index] != Tile::PaperRoll {
         return false;
     }
@@ -49,15 +59,27 @@ fn is_accessible(grid: &Grid<Tile>, index: Pair<usize>) -> bool {
         .iter()
         .map(|&m| m + Pair::new(index.x as i32, index.y as i32))
         .map(|i| grid[(i.x as usize, i.y as usize)])
-        .filter(|&v| v == Tile::PaperRoll)
+        .filter(|&v| v == Tile::PaperRoll || v == Tile::ToBeRemoved)
         .count();
 
-    count < 4
+    if count < 4 {
+        *grid.get_mut(index.x, index.y) = Tile::ToBeRemoved;
+        true
+    } else {
+        false
+    }
+}
+
+fn remove(grid: &mut Grid<Tile>) {
+    grid.iter_mut()
+        .filter(|t| **t == Tile::ToBeRemoved)
+        .for_each(|t| *t = Tile::Empty);
 }
 
 #[derive(Clone, Copy, PartialEq)]
 enum Tile {
     PaperRoll,
+    ToBeRemoved,
     Empty,
 }
 
