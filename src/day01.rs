@@ -3,134 +3,128 @@
 //!
 //! ## Problem Statement
 //!
-//! From an input file containing a sequence of `Rotation`s to be applied at the dial of a
-//! safe, compute:
+//! From an input file containing a sequence of rotation commands to be applied at the
+//! `Dial` of a safe, compute:
 //!
 //! 1. The number of times the dial is left pointing at 0 after any rotation is performed;
 //!
 //! 2. The number of times any click causes the dial to point at 0, regardless of whether
 //!    it happens during a rotation or at the end of one.
-use std::{error::Error, str::FromStr};
-
-use aoc_tools::input;
+//!
+//! The `Dial` comprises 100 positions [0, 100) and starts at 50.
+use std::fs;
 
 pub fn run() {
-    let rotations = input::lines_to_vec::<Rotation>("day01").unwrap();
+    let input = fs::read_to_string("inputs/day01").unwrap();
+    let rotations = parse_input(&input);
 
-    let mut safe1 = Dial::new();
-    rotations.iter().for_each(|r| safe1.rotate(r));
-    println!("answer pt1: {}", safe1.n_zeros);
+    let mut dial1 = Dial::new();
+    println!("answer pt1: {}", solve_pt1(&mut dial1, &rotations));
 
-    let mut safe2 = Dial::new();
-    rotations.iter().for_each(|r| safe2.rotate2(r));
-    println!("answer pt2: {}", safe2.n_zeros);
+    let mut dial2 = Dial::new();
+    println!("answer pt2: {}", solve_pt2(&mut dial2, &rotations));
 }
 
-/// Direction of rotation.
-enum Direction {
-    Left,
-    Right,
-}
-
-/// Rotation stores the `Direction` and the number of `clicks` to rotate the `Dial`.
-struct Rotation {
-    dir: Direction,
-    clicks: u16,
-}
-
-/// Dial stores the current position and keeps tally of the number of zeros (`n_zeros`).
+/// Parses a list of rotation commands from an ASCII string, returning a `Vec<i16>` where
+/// each element represents the length of a rotation.
 ///
-/// The dial is comprised of 100 positions [0..=99] and starts at 50.
+/// - Rotations for the `R`ight are returned as positive values.
+/// - Rotations for the `L`eft are returned as negative values.
+///
+/// # Arguments
+/// - `input`: An ASCII string where each line contains a rotation command. Each command
+///   starts with either `'L'` or `'R'` followed by a positive number. For example:
+///   `"R16"` or `"L100"`.
+///
+/// # Assumptions
+/// - The input is guaranteed to be ASCII.
+/// - The numeric part of each command is always positive.
+///
+/// # Panics
+/// - The input string is empty;
+/// - A line does not start with `'L'` or `'R'`;
+/// - The numeric part cannot be parsed into an `i16`.
+///
+/// # Examples
+/// ```
+/// let input = "R16\nL100\nR5";
+/// let rotations = parse_rotations(input).unwrap();
+/// assert_eq!(rotations, vec![16, -100, 5]);
+/// ```
+fn parse_input(input: &str) -> Vec<i16> {
+    input
+        .lines()
+        .map(|s| {
+            let dir = match &s[0..1] {
+                "L" => -1,
+                "R" => 1,
+                _ => panic!("Wrong Direction (expected L or R)."),
+            };
+            s[1..].parse::<i16>().unwrap() * dir
+        })
+        .collect()
+}
+
+/// Applies a sequence of rotations and returns the total of times a rotation ended up
+/// at zero.
+fn solve_pt1(dial: &mut Dial, rotations: &[i16]) -> usize {
+    rotations.iter().filter(|&&r| dial.rotate(r)).count()
+}
+
+/// Applies a sequence of rotations and returns the total of times it passed by zero,
+/// regardless of whether it happens during a rotation or at the end of one.
+fn solve_pt2(dial: &mut Dial, rotations: &[i16]) -> u16 {
+    rotations.iter().map(|&r| dial.rotate_2(r)).sum()
+}
+
+/// Represents a circular dial.
+///
+/// # Range and Wrapping
+/// - The dial conceptually has 100 positions `[0, 99]` and starts at position `50`.
+/// - To simplify arithmetic, positions may also be stored as negative values. The
+///   effective range is `[-99, 99]`.
+/// - Values outside this range are wrapped back into it:
+///   - `-100` and `100` both wrap to `0`.
+///   - Other values wrap to their signed equivalent, e.g.:
+///     - `220` → `20`
+///     - `-220` → `-20`
+///     
+/// This design allows straightforward addition and subtraction of offsets without
+/// requiring too much special-case handling for wrap-around.
 struct Dial {
-    pos: u16,
-    n_zeros: u16,
+    pos: i16,
 }
 
 impl Dial {
-    const SIZE: u16 = 100; // dial has positions [0..=99]
-    const START: u16 = 50; // dial begins pointing at position 50
+    const SIZE: i16 = 100; // dial has positions [0..=99]
+    const START: i16 = 50; // dial begins pointing at position 50
 
     fn new() -> Dial {
-        Dial {
-            pos: Dial::START,
-            n_zeros: 0,
-        }
+        Dial { pos: Dial::START }
     }
 
-    /// Updates the dial for a given rotation, according to the **part 1** rules.
-    ///
-    /// The number of zeros (`n_zeros`) is incremented each time the dial finishes a
-    /// rotation pointing at position 0.
-    fn rotate(&mut self, r: &Rotation) {
-        self.pos = match r.dir {
-            Direction::Right => (self.pos + r.clicks) % Self::SIZE,
-            Direction::Left if r.clicks <= self.pos => self.pos - r.clicks,
-            Direction::Left => Self::SIZE - self.pos.abs_diff(r.clicks) % Self::SIZE,
-        };
+    /// Applies a given rotation to the dial and returns whether it ended up at zero
+    /// (according to the **part 1** rules).
+    fn rotate(&mut self, r: i16) -> bool {
+        self.pos = (self.pos + r) % Self::SIZE;
 
-        // the second left case above may not wrap 100 to 0 (not a problem for this
-        // implementation)
-        if self.pos == 0 || self.pos == 100 {
-            self.n_zeros += 1;
-        }
+        self.pos == 0
     }
 
-    /// Updates the dial for a given rotation, according to the **part 2** rules.
-    ///
-    /// The number of zeros (`n_zeros`) is incremented every time the dial passes by zero,
-    /// regardless of whether it happens during a rotation of the end of one.
-    fn rotate2(&mut self, r: &Rotation) {
-        match r.dir {
-            Direction::Right => {
-                let pos = self.pos + r.clicks;
-                self.n_zeros += pos / Self::SIZE;
-                self.pos = pos % Self::SIZE;
+    /// Applies a given rotation to the dial and returns the number of times it passed by
+    /// zero, regardless of whether it happens during a rotation or at the end of one
+    /// (according to the **part 2** rules).
+    fn rotate_2(&mut self, r: i16) -> u16 {
+        let old_pos = self.pos;
+        let new_pos = self.pos + r;
+        self.pos = new_pos % Self::SIZE;
+
+        (new_pos / Self::SIZE).unsigned_abs()
+            + if old_pos != 0 && new_pos.signum() * old_pos.signum() <= 0 {
+                1 // zero crossing correction
+            } else {
+                0
             }
-            // Does not cross zero
-            Direction::Left if r.clicks < self.pos => {
-                self.pos -= r.clicks;
-            }
-            // Rotates past zero
-            Direction::Left => {
-                let pos = self.pos.abs_diff(r.clicks);
-
-                // When rotating left past 0, we cross zero once.
-                // If starting exactly at 0, we don't count that crossing again.
-                self.n_zeros += pos / Self::SIZE + if self.pos != 0 { 1 } else { 0 };
-
-                // Taking module again so the value can wrap around properly
-                self.pos = (Self::SIZE - pos % Self::SIZE) % Self::SIZE;
-            }
-        };
-    }
-}
-
-impl FromStr for Rotation {
-    type Err = Box<dyn Error>;
-
-    /// Parses a rotation from a string like "R16" or "L100".
-    ///
-    /// # Arguments
-    /// Input string must start with 'L' or 'R', followed by a u16 number (0–65535).
-    ///
-    /// # Errors
-    /// Returns an error if:
-    /// - Input is empty
-    /// - First character is not 'L' or 'R'
-    /// - The number part fails to parse as u16
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.is_empty() {
-            Err("Empty Rotation")?
-        }
-
-        let dir = match &s[0..1] {
-            "L" => Ok(Direction::Left),
-            "R" => Ok(Direction::Right),
-            _ => Err("Wrong Direction (expected L or R)."),
-        }?;
-        let clicks = s[1..].parse::<u16>()?;
-
-        Ok(Rotation { dir, clicks })
     }
 }
 
@@ -149,26 +143,82 @@ L99
 R14
 L82";
 
+    const ROTATIONS: [i16; 10] = [-68, -30, 48, -5, 60, -55, -1, -99, 14, -82];
+
     #[test]
-    fn test_dial_rotate() {
-        let mut safe1 = Dial::new();
-        aoc_tools::parse::lines::<Rotation>(INPUT).for_each(|r| {
-            safe1.rotate(&r);
-        });
-        assert_eq!(safe1.n_zeros, 3);
+    fn test_parse_input() {
+        let input = parse_input(INPUT);
+        assert_eq!(input, ROTATIONS);
     }
 
     #[test]
-    fn test_dial_rotate2() {
-        let mut safe2 = Dial::new();
-        aoc_tools::parse::lines::<Rotation>(INPUT).for_each(|r| {
-            safe2.rotate2(&r);
-        });
-        assert_eq!(safe2.n_zeros, 6);
+    fn test_dial_solve_pt1() {
+        let mut dial = Dial::new();
+        assert_eq!(solve_pt1(&mut dial, &ROTATIONS), 3);
     }
 
-    // TODO: Add edge case tests:
-    // - Rotation starting/ending exactly at 0
-    // - Very large clicks that wrap multiple times
-    // - Left rotations that cross 0
+    #[test]
+    fn test_dial_solve_pt2() {
+        let mut dial = Dial::new();
+        assert_eq!(solve_pt2(&mut dial, &ROTATIONS), 6);
+    }
+
+    /// Small rotations wrapping.
+    #[test]
+    fn test_dial_rotate2_small() {
+        let mut dial = Dial::new(); // 50
+
+        assert_eq!(dial.rotate_2(40), 0); // 90
+        assert_eq!(dial.rotate_2(-80), 0); // 10
+        assert_eq!(dial.rotate_2(-20), 1, "cross zero past left"); // -10
+        assert_eq!(dial.rotate_2(-80), 0); // -90
+        assert_eq!(dial.rotate_2(40), 0); // -50
+        assert_eq!(dial.rotate_2(100), 1, "cross zero past right"); // 50
+    }
+
+    /// Rotations ending or starting exactly at 0.
+    #[test]
+    fn test_dial_rotate2_end_start_zero() {
+        let mut safe = Dial::new();
+
+        assert_eq!(safe.rotate_2(-50), 1, "goes to zero");
+        assert_eq!(safe.rotate_2(1), 0, "get out of zero by the right");
+        assert_eq!(safe.rotate_2(99), 1, "right wrap to zero");
+        assert_eq!(safe.rotate_2(-1), 0, "get out of zero by the left");
+        assert_eq!(safe.rotate_2(-99), 1, "left wrap to zero");
+    }
+
+    /// Small rotations wrapping.
+    #[test]
+    fn test_dial_rotate2_wrapping() {
+        let mut dial = Dial::new(); // 50
+
+        assert_eq!(dial.rotate_2(60), 1, "wrap past right, positive to positive"); // 110 -> 10
+        assert_eq!(dial.rotate_2(-20), 1, "wrap past left, positive to negative"); // -10
+        assert_eq!(dial.rotate_2(-110), 1, "wrap past left, negative to negative"); // -120 -> 20
+        assert_eq!(dial.rotate_2(30), 1, "wrap past right, negative to positive"); // 10
+    }
+
+    /// Rotations wrapping from zero to zero.
+    #[test]
+    fn test_dial_rotate2_wrap_zero() {
+        let mut dial = Dial::new();
+
+        assert_eq!(dial.rotate_2(-50), 1, "goes to zero");
+        assert_eq!(dial.rotate_2(-100), 1, "from zero, left wrap to zero");
+        assert_eq!(dial.rotate_2(100), 1, "from zero, right wrap to zero");
+    }
+
+    /// Large rotations that cross zero multiple times.
+    #[test]
+    fn test_dial_rotate2_large() {
+        let mut dial = Dial::new(); // 50
+
+        assert_eq!(dial.rotate_2(500), 5, "keep on positive"); // 550 -> 50
+        assert_eq!(dial.rotate_2(570), 6, "keep on positive"); // 620 -> 20
+        assert_eq!(dial.rotate_2(-670), 7, "goes to negative"); // -650 -> -50
+        assert_eq!(dial.rotate_2(-200), 2, "keep on negative"); // -250 -> -50
+        assert_eq!(dial.rotate_2(-370), 4, "keep on negative"); // -420 -> -20
+        assert_eq!(dial.rotate_2(570), 6, "goes to positive"); // 550 -> 50
+    }
 }
