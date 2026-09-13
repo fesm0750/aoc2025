@@ -1,10 +1,10 @@
 //! # Day 01: Secret Entrance
-//! https://adventofcode.com/2025/day/1
+//! <https://adventofcode.com/2025/day/1>
 //!
 //! ## Problem Statement
 //!
-//! From an input file containing a sequence of rotation commands to be applied at the
-//! `Dial` of a safe, compute:
+//! From an input file containing a sequence of rotation commands for a safe
+//! `Dial`, compute:
 //!
 //! 1. The number of times the dial is left pointing at 0 after any rotation is performed;
 //!
@@ -12,6 +12,16 @@
 //!    it happens during a rotation or at the end of one.
 //!
 //! The `Dial` comprises 100 positions [0, 100) and starts at 50.
+//!
+//! ## Implementation Details
+//!
+//! ### State Representation: Symmetric Signed Modulo
+//!
+//! Tracks dial in signed range (-100, 100) instead of canonical [0, 100), avoiding
+//! Euclidean modulo overhead. This works because the target position zero is uniquely
+//! stable in both Euclidean and symmetric forms, enabling direct use of the `%` operator.
+//!
+//! - Rotating Right adds positive offsets; Left adds negative.
 use std::fs;
 
 pub fn run() {
@@ -22,30 +32,20 @@ pub fn run() {
     println!("answer pt2: {}", solve_pt2(&rotations));
 }
 
-/// Parses a list of rotation commands from an ASCII string, returning a `Vec<i16>` where
-/// each element represents the length of a rotation.
+/// Parses a list of signed rotation offsets from ASCII input.
 ///
-/// - Rotations for the `R`ight are returned as positive values.
-/// - Rotations for the `L`eft are returned as negative values.
-///
-/// # Arguments
-/// - `input`: An ASCII string where each line contains a rotation command. Each command
-///   starts with either `'L'` or `'R'` followed by a positive number. For example:
-///   `"R16"` or `"L100"`.
-///
-/// # Assumptions
-/// - The input is guaranteed to be ASCII.
-/// - The numeric part of each command is always positive.
+/// Each line must contain a command consisting of a direction prefix and a
+/// magnitude; 'R' corresponds to positive angular displacement, whereas 'L'
+/// maps to a negative one.
 ///
 /// # Panics
-/// - The input string is empty;
-/// - A line does not start with `'L'` or `'R'`;
-/// - The numeric part cannot be parsed into an `i16`.
+/// Panics if a line is empty, or if a non-empty line has invalid direction
+/// prefixes or invalid numeric payloads.
 ///
-/// # Examples
-/// ```
+/// # Example
+/// ```ignore
 /// let input = "R16\nL100\nR5";
-/// let rotations = parse_rotations(input).unwrap();
+/// let rotations = parse_input(input);
 /// assert_eq!(rotations, vec![16, -100, 5]);
 /// ```
 fn parse_input(input: &str) -> Vec<i16> {
@@ -65,32 +65,23 @@ fn parse_input(input: &str) -> Vec<i16> {
         .collect()
 }
 
-/// Applies a sequence of rotations and returns the total of times a rotation ended up
+/// Computes the number of operations terminating at zero.
 fn solve_pt1(rotations: &[i16]) -> usize {
     let mut dial = Dial::new();
     rotations.iter().filter(|&&r| dial.rotate(r)).count()
 }
 
-/// Applies a sequence of rotations and returns the total of times it passed by zero,
+/// Computes the aggregate zero crossings during all rotations.
 fn solve_pt2(rotations: &[i16]) -> usize {
     let mut dial = Dial::new();
     rotations.iter().map(|&r| dial.rotate_2(r) as usize).sum()
 }
 
-/// Represents a circular dial.
+/// Cyclic dial over Z_100, starting at position 50.
 ///
-/// # Range and Wrapping
-/// - The dial conceptually has 100 positions `[0, 99]` and starts at position `50`.
-/// - To simplify arithmetic, positions may also be stored as negative values. The
-///   effective range is `[-99, 99]`.
-/// - Values outside this range are wrapped back into it:
-///   - `-100` and `100` both wrap to `0`.
-///   - Other values wrap to their signed equivalent, e.g.:
-///     - `220` → `20`
-///     - `-220` → `-20`
-///     
-/// This design allows straightforward addition and subtraction of offsets without
-/// requiring too much special-case handling for wrap-around.
+/// Position is tracked in the symmetric range (-100, 100) to simplify wrap‑around for
+/// negatives. Zero is stable in both Euclidean and symmetric representations, allowing
+/// direct use of the `%` operator without extra modulo corrections.
 struct Dial {
     pos: i16,
 }
@@ -103,17 +94,23 @@ impl Dial {
         Dial { pos: Dial::START }
     }
 
-    /// Applies a given rotation to the dial and returns whether it ended up at zero
-    /// (according to the **part 1** rules).
+    /// Part 1: Advance dial by `r` clicks and return true if positioned exactly
+    /// at 0.
     fn rotate(&mut self, r: i16) -> bool {
         self.pos = (self.pos + r) % Self::SIZE;
 
         self.pos == 0
     }
 
-    /// Applies a given rotation to the dial and returns the number of times it passed by
-    /// zero, regardless of whether it happens during a rotation or at the end of one
-    /// (according to the **part 2** rules).
+    /// Part 2: Advances dial by `r` clicks and returns the number of zero-state
+    /// visits.
+    ///
+    /// # Technical Note
+    ///
+    /// Due to the use of a symmetric representation, it is necessary to account for the
+    /// transition from `old_pos` to `new_pos` across the origin. The correction is
+    /// applied if and only if the sign changes or reaches zero, excluding the
+    /// non-crossing case where `old_pos == 0`.
     fn rotate_2(&mut self, r: i16) -> u16 {
         let old_pos = self.pos;
         let new_pos = self.pos + r;
@@ -143,6 +140,10 @@ L82";
 
     const ROTATIONS: [i16; 10] = [-68, -30, 48, -5, 60, -55, -1, -99, 14, -82];
 
+    // ==========================================
+    // AoC test cases
+    // ==========================================
+
     #[test]
     fn test_parse_input() {
         let input = parse_input(INPUT);
@@ -159,7 +160,11 @@ L82";
         assert_eq!(solve_pt2(&ROTATIONS), 6);
     }
 
-    /// Small rotations wrapping.
+    // ==========================================
+    // General Dial tests for rotate2
+    // ==========================================
+
+    /// General small rotations.
     #[test]
     fn test_dial_rotate2_small() {
         let mut dial = Dial::new(); // 50
