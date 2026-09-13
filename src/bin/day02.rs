@@ -2,7 +2,7 @@ use std::fs;
 
 type Range = (u64, u64);
 
-pub fn run() {
+pub fn main() {
     let input = fs::read_to_string("inputs/day02").unwrap();
     let ranges = parse_input(&input);
 

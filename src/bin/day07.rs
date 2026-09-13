@@ -1,12 +1,12 @@
 //! # Day 7: Laboratories
-//! https://adventofcode.com/2025/day/7
+//! <https://adventofcode.com/2025/day/7>
 
 use std::fs;
 
 use Manifold::*;
 use aoc_tools::grid::Grid;
 
-pub fn run() {
+pub fn main() {
     let input = fs::read_to_string("inputs/day07").unwrap();
     let mut field = parse_input(&input);
 

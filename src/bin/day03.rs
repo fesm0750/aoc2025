@@ -1,11 +1,12 @@
 //! # Day 3: Lobby
-//! https://adventofcode.com/2025/day/3
+//! <https://adventofcode.com/2025/day/3>
 
+use std::cmp::Ordering::*;
 use std::fs;
 
 const BANK_SIZE: usize = 100;
 
-pub fn run() {
+pub fn main() {
     let input = fs::read_to_string("inputs/day03").unwrap();
     let banks = parse_input::<BANK_SIZE>(&input);
 
@@ -57,12 +58,10 @@ fn pt2<const N: usize>(banks: &[[u8; N]]) -> u64 {
         for &curr in bank[0..N - SIZE].iter().rev() {
             let mut aux = curr;
             for b in joltage.iter_mut() {
-                if aux >= *b {
-                    std::mem::swap(&mut *b, &mut aux);
-                } else if aux == *b {
-                    continue;
-                } else {
-                    break;
+                match aux.cmp(b) {
+                    Greater => std::mem::swap(&mut *b, &mut aux),
+                    Less => break,
+                    Equal => continue,
                 }
             }
         }

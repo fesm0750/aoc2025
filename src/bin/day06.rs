@@ -1,8 +1,9 @@
 //! # Day 6: Trash Compactor
-//! https://adventofcode.com/2025/day/6
+//! <https://adventofcode.com/2025/day/6>
 
 use std::{error::Error, fs, str::FromStr};
-pub fn run() {
+
+pub fn main() {
     let input = fs::read_to_string("inputs/day06").unwrap();
     let (list, ops) = parse_input(&input);
 
@@ -26,6 +27,8 @@ fn parse_input(input: &str) -> (Vec<[u64; 4]>, Vec<Operation>) {
 }
 
 fn do_math<const N: usize>(list: &[[u64; N]], ops: &[Operation]) -> u64 {
+    assert_eq!(list.len(), ops.len(), "Input arguments are not of the same length.");
+
     ops.iter()
         .enumerate()
         .map(|(i, op)| {

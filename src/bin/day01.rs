@@ -24,7 +24,7 @@
 //! - Rotating Right adds positive offsets; Left adds negative.
 use std::fs;
 
-pub fn run() {
+pub fn main() {
     let input = fs::read_to_string("inputs/day01").unwrap();
     let rotations = parse_input(&input);
 

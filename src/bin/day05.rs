@@ -1,8 +1,11 @@
+//! # Day 5: Cafeteria
+//! <https://adventofcode.com/2025/day/5>
+
 use std::fs;
 
 type Range = (u64, u64);
 
-pub fn run() {
+pub fn main() {
     let input = fs::read_to_string("inputs/day05").unwrap();
     let (ranges, ids) = input.split_once("\n\n").unwrap();
 

@@ -1,11 +1,11 @@
 //! # Day 4: Printing Department
-//! https://adventofcode.com/2025/day/4
+//! <https://adventofcode.com/2025/day/4>
 
 use std::fs;
 
 use aoc_tools::{grid::Grid, pair::Pair};
 
-pub fn run() {
+pub fn main() {
     let input = fs::read_to_string("inputs/day04").unwrap();
     let len_x = input.lines().next().unwrap().len();
 
