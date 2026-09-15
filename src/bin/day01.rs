@@ -68,13 +68,13 @@ fn parse_input(input: &str) -> Vec<i16> {
 /// Computes the number of operations terminating at zero.
 fn solve_pt1(rotations: &[i16]) -> usize {
     let mut dial = Dial::new();
-    rotations.iter().filter(|&&r| dial.rotate(r)).count()
+    rotations.iter().filter(|&&r| dial.rotate_lands_on_zero(r)).count()
 }
 
 /// Computes the aggregate zero crossings during all rotations.
 fn solve_pt2(rotations: &[i16]) -> usize {
     let mut dial = Dial::new();
-    rotations.iter().map(|&r| dial.rotate_2(r) as usize).sum()
+    rotations.iter().map(|&r| dial.rotate_count_zeroes(r) as usize).sum()
 }
 
 /// Cyclic dial over Z_100, starting at position 50.
@@ -94,16 +94,13 @@ impl Dial {
         Dial { pos: Dial::START }
     }
 
-    /// Part 1: Advance dial by `r` clicks and return true if positioned exactly
-    /// at 0.
-    fn rotate(&mut self, r: i16) -> bool {
+    /// Advances dial by `r` clicks and returns true if positioned exactly at 0.
+    fn rotate_lands_on_zero(&mut self, r: i16) -> bool {
         self.pos = (self.pos + r) % Self::SIZE;
-
         self.pos == 0
     }
 
-    /// Part 2: Advances dial by `r` clicks and returns the number of zero-state
-    /// visits.
+    /// Advances dial by `r` clicks and returns the number of zero-state visits.
     ///
     /// # Technical Note
     ///
@@ -111,7 +108,7 @@ impl Dial {
     /// transition from `old_pos` to `new_pos` across the origin. The correction is
     /// applied if and only if the sign changes or reaches zero, excluding the
     /// non-crossing case where `old_pos == 0`.
-    fn rotate_2(&mut self, r: i16) -> u16 {
+    fn rotate_count_zeroes(&mut self, r: i16) -> u16 {
         let old_pos = self.pos;
         let new_pos = self.pos + r;
         self.pos = new_pos % Self::SIZE;
@@ -168,58 +165,57 @@ L82";
     #[test]
     fn test_dial_rotate2_small() {
         let mut dial = Dial::new(); // 50
-
-        assert_eq!(dial.rotate_2(40), 0); // 90
-        assert_eq!(dial.rotate_2(-80), 0); // 10
-        assert_eq!(dial.rotate_2(-20), 1, "cross zero past left"); // -10
-        assert_eq!(dial.rotate_2(-80), 0); // -90
-        assert_eq!(dial.rotate_2(40), 0); // -50
-        assert_eq!(dial.rotate_2(100), 1, "cross zero past right"); // 50
+        assert_eq!(dial.rotate_count_zeroes(40), 0); // 90
+        assert_eq!(dial.rotate_count_zeroes(-80), 0); // 10
+        assert_eq!(dial.rotate_count_zeroes(-20), 1, "cross zero past left"); // -10
+        assert_eq!(dial.rotate_count_zeroes(-80), 0); // -90
+        assert_eq!(dial.rotate_count_zeroes(40), 0); // -50
+        assert_eq!(dial.rotate_count_zeroes(100), 1, "cross zero past right"); // 50
     }
 
     /// Rotations ending or starting exactly at 0.
     #[test]
     fn test_dial_rotate2_end_start_zero() {
         let mut safe = Dial::new();
-
-        assert_eq!(safe.rotate_2(-50), 1, "goes to zero");
-        assert_eq!(safe.rotate_2(1), 0, "get out of zero by the right");
-        assert_eq!(safe.rotate_2(99), 1, "right wrap to zero");
-        assert_eq!(safe.rotate_2(-1), 0, "get out of zero by the left");
-        assert_eq!(safe.rotate_2(-99), 1, "left wrap to zero");
+        assert_eq!(safe.rotate_count_zeroes(-50), 1, "goes to zero");
+        assert_eq!(safe.rotate_count_zeroes(1), 0, "get out of zero by the right");
+        assert_eq!(safe.rotate_count_zeroes(99), 1, "right wrap to zero");
+        assert_eq!(safe.rotate_count_zeroes(-1), 0, "get out of zero by the left");
+        assert_eq!(safe.rotate_count_zeroes(-99), 1, "left wrap to zero");
     }
 
     /// Small rotations wrapping.
     #[test]
     fn test_dial_rotate2_wrapping() {
         let mut dial = Dial::new(); // 50
-
-        assert_eq!(dial.rotate_2(60), 1, "wrap past right, positive to positive"); // 110 -> 10
-        assert_eq!(dial.rotate_2(-20), 1, "wrap past left, positive to negative"); // -10
-        assert_eq!(dial.rotate_2(-110), 1, "wrap past left, negative to negative"); // -120 -> -20
-        assert_eq!(dial.rotate_2(30), 1, "wrap past right, negative to positive"); // 10
+        assert_eq!(dial.rotate_count_zeroes(60), 1, "wrap past right, positive to positive"); // 110 -> 10
+        assert_eq!(dial.rotate_count_zeroes(-20), 1, "wrap past left, positive to negative"); // -10
+        assert_eq!(
+            dial.rotate_count_zeroes(-110),
+            1,
+            "wrap past left, negative to negative"
+        ); //-120 ->-20
+        assert_eq!(dial.rotate_count_zeroes(30), 1, "wrap past right, negative to positive"); // 10
     }
 
     /// Rotations wrapping from zero to zero.
     #[test]
     fn test_dial_rotate2_wrap_zero() {
         let mut dial = Dial::new();
-
-        assert_eq!(dial.rotate_2(-50), 1, "goes to zero");
-        assert_eq!(dial.rotate_2(-100), 1, "from zero, left wrap to zero");
-        assert_eq!(dial.rotate_2(100), 1, "from zero, right wrap to zero");
+        assert_eq!(dial.rotate_count_zeroes(-50), 1, "goes to zero");
+        assert_eq!(dial.rotate_count_zeroes(-100), 1, "from zero, left wrap to zero");
+        assert_eq!(dial.rotate_count_zeroes(100), 1, "from zero, right wrap to zero");
     }
 
     /// Large rotations that cross zero multiple times.
     #[test]
     fn test_dial_rotate2_large() {
         let mut dial = Dial::new(); // 50
-
-        assert_eq!(dial.rotate_2(500), 5, "keep on positive"); // 550 -> 50
-        assert_eq!(dial.rotate_2(570), 6, "keep on positive"); // 620 -> 20
-        assert_eq!(dial.rotate_2(-670), 7, "goes to negative"); // -650 -> -50
-        assert_eq!(dial.rotate_2(-200), 2, "keep on negative"); // -250 -> -50
-        assert_eq!(dial.rotate_2(-370), 4, "keep on negative"); // -420 -> -20
-        assert_eq!(dial.rotate_2(570), 6, "goes to positive"); // 550 -> 50
+        assert_eq!(dial.rotate_count_zeroes(500), 5, "keep on positive"); // 550 -> 50
+        assert_eq!(dial.rotate_count_zeroes(570), 6, "keep on positive"); // 620 -> 20
+        assert_eq!(dial.rotate_count_zeroes(-670), 7, "goes to negative"); // -650 -> -50
+        assert_eq!(dial.rotate_count_zeroes(-200), 2, "keep on negative"); // -250 -> -50
+        assert_eq!(dial.rotate_count_zeroes(-370), 4, "keep on negative"); // -420 -> -20
+        assert_eq!(dial.rotate_count_zeroes(570), 6, "goes to positive"); // 550 -> 50
     }
 }
