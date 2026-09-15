@@ -3,16 +3,23 @@
 //!
 //! ## Implementation details
 //!
-//! Total number of generated ids = 2,593,147
-use std::fs;
+use std::{fs, time::Instant};
 
 pub fn main() {
     let input = fs::read_to_string("inputs/day02").unwrap();
-    let ids = parse_input(&input);
-    // println!("number of elements: {}", ids.len());
 
-    println!("answer pt1: {}", solve_pt1(&ids));
-    println!("answer pt2: {}", solve_pt2(&ids));
+    let start = Instant::now();
+    let ids = parse_input(&input);
+    let t0 = start.elapsed();
+    let pt1 = solve_pt1(&ids);
+    let t1 = start.elapsed();
+    let pt2 = solve_pt2(&ids);
+    let duration = start.elapsed();
+
+    println!("answer pt1: {}, at {:?}", pt1, t1 - t0);
+    println!("answer pt2: {}, at {:?}", pt2, duration - t1);
+    println!("parse time: {:?}", t0);
+    println!("Time elapsed: {:?}", duration);
 }
 
 /// Parses a list of ranges from an ASCII input into a list of `ID`s.
@@ -53,27 +60,15 @@ fn is_repeated_twice(id: u64) -> bool {
 /// `id` cannot be zero, otherwise panis.
 fn is_repeating_pattern(id: u64) -> bool {
     let num_digits = id.ilog10() + 1;
-
-    for pat_len in 1..num_digits / 2 + 1 {
-        // checks if the length of the pattern fits the number
-        if num_digits % pat_len > 0 {
-            continue;
-        }
-
-        // construct a number from the pattern
-        // let len = id.ilog10() as u64 + 1;
-        let pat = id % 10u64.pow(pat_len);
-        let constructed = (0..num_digits / pat_len)
-            .map(|n| pat * 10u64.pow(pat_len * n))
+    (1..num_digits / 2 + 1)
+        .filter(|&len| num_digits % len == 0)
+        .any(|len| {
+            let pattern = id % 10u64.pow(len);
+            let candidate = (0..num_digits / len)
+                .map(|n| pattern * 10u64.pow(len * n))
             .sum::<u64>();
-
-        // check if the built repeated pattern matches the id
-        if constructed == id {
-            return true;
-        }
-    }
-
-    false
+            candidate == id
+        })
 }
 
 #[cfg(test)]
