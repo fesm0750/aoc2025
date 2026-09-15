@@ -83,6 +83,10 @@ mod tests {
     const INPUT: &str = "11-22,95-115,998-1012,1188511880-1188511890,222220-222224,1698522-1698528,446443-446449,38593856-38593862,565653-565659,824824821-824824827,2121212118-2121212124
 ";
 
+    // ==========================================
+    // AoC test cases
+    // ==========================================
+
     #[test]
     fn test_solve_pt1() {
         let ids = parse_input(INPUT);
@@ -95,5 +99,38 @@ mod tests {
         let ids = parse_input(INPUT);
         let total = solve_pt2(&ids);
         assert_eq!(total, 4174379265);
+    }
+
+    // ==========================================
+    // General test cases
+    // ==========================================
+
+    #[test]
+    fn test_is_repeated_twice() {
+        assert!(is_repeated_twice(55), "single digit pattern");
+        assert!(is_repeated_twice(56105610), "more digits");
+        assert!(is_repeating_pattern(12345671234567), "larger pattern");
+
+        // false test cases
+        assert!(!is_repeated_twice(555), "even number of digits");
+        assert!(!is_repeated_twice(565656), "more than twice");
+        assert!(!is_repeated_twice(561165), "mirrored");
+        assert!(!is_repeated_twice(5610561), "zero at start");
+        assert!(!is_repeated_twice(5615610), "broken zero at end");
+    }
+
+    #[test]
+    fn test_is_repeating_pattern() {
+        assert!(is_repeating_pattern(55), "single digit twice");
+        assert!(is_repeating_pattern(555), "single digit three times");
+        assert!(is_repeating_pattern(56565656), "multiple, even number of digits");
+        assert!(is_repeating_pattern(765765765), "multiple, odd number of digits");
+        assert!(is_repeating_pattern(12345671234567), "larger pattern");
+
+        // false test cases
+        assert!(!is_repeating_pattern(561165), "mirrored");
+        assert!(!is_repeating_pattern(56156561), "middle pattern broken");
+        assert!(!is_repeating_pattern(5610561), "zero at start");
+        assert!(!is_repeating_pattern(5615610), "broken zero at end");
     }
 }
