@@ -1,8 +1,42 @@
 //! # Day 2: Gift Shop
 //! <https://adventofcode.com/2025/day/2>
 //!
-//! ## Implementation details
+//! ## Problem Statement
 //!
+//! Given a list of numeric `ID` ranges in ASCII input, identify invalid values formed by
+//! repeating digit patterns.
+//!
+//! 1. Return the sum of `ID`s consisting of a digit sequence repeated exactly twice.
+//!
+//! 2. Return the sum of `ID`s consisting of any pattern repeated two or more times.
+//!
+//! Invalid IDs must consist solely of repeating patterns, with no other digits allowed.
+//!
+//! Assumes the input ranges does not overlap.
+//!
+//! ## Implementation Details
+//!
+//! A brute-force approach generating the full list of IDs from the given ranges and
+//! testing each one against the invalidity conditions. From the provided input, the total
+//! number of ids is 2,593,147.
+//!
+//! For part 2, subsequences of the original ID are extracted and repeated to reconstruct
+//! a candidate number, which is then compared against the original. Constructing numbers
+//! through successive multiplications is preferred over repeated divisions, as it is
+//! both simpler and more efficient.
+//!
+//! ## Performance
+//!
+//! This version process the id in numeric form. Another version processing the id as a
+//! string was also experimented with. Although part2 using string is faster, the
+//! generation of the id list as string is much more expensive.
+//!
+//! |       | numeric | string |
+//! | ----- | ------- | ------ |
+//! | pt1   |  11 ms  |   8 ms |
+//! | pt2   |  75 ms  |  46 ms |
+//! | parse |  23 ms  | 143 ms |
+//! | total | 110 ms  | 198 ms | *note: ceiling has been applied
 use std::{fs, time::Instant};
 
 pub fn main() {
@@ -22,7 +56,12 @@ pub fn main() {
     println!("Time elapsed: {:?}", duration);
 }
 
-/// Parses a list of ranges from an ASCII input into a list of `ID`s.
+/// Parses an ASCII input string of numeric ranges into a list of `ID`s.
+///
+/// Each range is defined by a starting and ending value separated by a hyphen (`-`),
+/// and multiple ranges are separated by commas (`,`).
+///
+/// Example: `"11-22,95-115"` produces all IDs from 11 through 22 and 95 through 115.
 fn parse_input(input: &str) -> Vec<u64> {
     input
         .trim()
@@ -42,22 +81,32 @@ fn solve_pt1(ids: &[u64]) -> u64 {
     ids.iter().filter(|&&id| is_repeated_twice(id)).sum::<u64>()
 }
 
+/// Returns the sum of invalid `IDs` according to part 2.
+///
+/// Assumes no ID is zero, otherwise panics.
 fn solve_pt2(ids: &[u64]) -> u64 {
     ids.iter().filter(|&&id| is_repeating_pattern(id)).sum::<u64>()
 }
 
 /// Checks whether the first half of an `id` is equal to its second half.
 ///
-/// `id` cannot be zero, otherwise panis.
+/// `id` cannot be zero, otherwise panics.
 fn is_repeated_twice(id: u64) -> bool {
     let num_digits = id.ilog10() + 1;
     let half_divider = 10u64.pow(num_digits / 2);
     num_digits % 2 == 0 && id / half_divider == id % half_divider
 }
 
-/// Checks whether the id is composed of a repeating pattern.
+/// Checks whether the given `id` is composed entirely of repeating digit subsequences.
 ///
-/// `id` cannot be zero, otherwise panis.
+/// The value of `id` must be non‑zero, otherwise panics.
+///
+/// # Technical Note
+///
+/// The check is performed by extracting subsequences of varying lengths from the `id`
+/// and testing whether repeating those subsequences can reconstruct the original value.
+/// Generating candidate numbers through successive multiplications is more efficient
+/// than deconstructing the target `id` with repeated divisions.
 fn is_repeating_pattern(id: u64) -> bool {
     let num_digits = id.ilog10() + 1;
     (1..num_digits / 2 + 1)
@@ -66,7 +115,7 @@ fn is_repeating_pattern(id: u64) -> bool {
             let pattern = id % 10u64.pow(len);
             let candidate = (0..num_digits / len)
                 .map(|n| pattern * 10u64.pow(len * n))
-            .sum::<u64>();
+                .sum::<u64>();
             candidate == id
         })
 }
