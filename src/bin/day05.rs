@@ -3,13 +3,13 @@
 
 use std::fs;
 
-type Range = (u64, u64);
+type IdRange = (u64, u64);
 
 pub fn main() {
     let input = fs::read_to_string("inputs/day05").unwrap();
     let (ranges, ids) = input.split_once("\n\n").unwrap();
 
-    let mut ranges: Vec<Range> = ranges
+    let mut ranges: Vec<IdRange> = ranges
         .lines()
         .filter_map(|s| s.split_once('-'))
         .map(|r| (r.0.parse().unwrap(), r.1.parse().unwrap()))
@@ -18,19 +18,20 @@ pub fn main() {
 
     let ids: Vec<u64> = ids.lines().flat_map(str::parse).collect();
 
-    println!("answer pt1: {}", count_fresh(&ids, &ranges));
-    println!("answer pt2: {}", flat_ranges(&ranges).count());
+    println!("answer pt1: {}", count_fresh_ids(&ids, &ranges));
+    println!("answer pt2: {}", flatten_ranges(&ranges).count());
 }
 
-fn is_fresh(id: &u64, ranges: &[Range]) -> bool {
-    ranges.iter().any(|(min, max)| min <= id && id <= max)
+fn is_fresh_id(id: &u64, ranges: &[IdRange]) -> bool {
+    ranges.iter().any(|(left, right)| left <= id && id <= right)
 }
 
-fn count_fresh(ids: &[u64], ranges: &[Range]) -> u64 {
-    ids.iter().filter(|id| is_fresh(id, ranges)).count() as u64
+fn count_fresh_ids(ids: &[u64], ranges: &[IdRange]) -> u64 {
+    ids.iter().filter(|id| is_fresh_id(id, ranges)).count() as u64
 }
 
-fn flat_ranges(sorted_ranges: &[Range]) -> impl Iterator {
+/// Assumes zero does not belong to any range.
+fn flatten_ranges(sorted_ranges: &[IdRange]) -> impl Iterator<Item = u64> {
     let mut last = 0;
     sorted_ranges
         .iter()
@@ -56,6 +57,6 @@ mod tests {
     fn test_squash_ranges() {
         let mut ranges = [(3, 5), (10, 14), (16, 20), (12, 18)];
         ranges.sort_unstable();
-        assert_eq!(14, flat_ranges(&ranges).count());
+        assert_eq!(14, flatten_ranges(&ranges).count());
     }
 }
