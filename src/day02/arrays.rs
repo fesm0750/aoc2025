@@ -1,45 +1,56 @@
 //! Array implementation: represent each ID as a fixed-size digit array.
 
-const MAX_DIGITS: usize = 20;
+use crate::day02;
 
 #[derive(Clone, Copy)]
-struct Id {
-    digits: [u8; MAX_DIGITS],
+pub struct Id {
+    digits: [u8; Self::MAX_DIGITS],
     len: usize,
 }
 
-pub fn solve(input: &str) -> (u64, u64) {
-    let ids = parse(input);
-    (
-        ids.iter()
-            .filter(|id| is_repeated_twice(id))
-            .map(|id| id.value())
-            .sum(),
-        ids.iter()
-            .filter(|id| is_repeating_pattern(id))
-            .map(|id| id.value())
-            .sum(),
-    )
+pub fn parse(path: &str) -> Vec<Id> {
+    day02::parse(path).iter().map(Id::from_value).collect()
 }
 
-fn parse(input: &str) -> Vec<Id> {
-    input
-        .trim()
-        .split(',')
-        .flat_map(|range| {
-            let (start, end) = range.split_once('-').unwrap();
-            let start = start.parse::<u64>().unwrap();
-            let end = end.parse::<u64>().unwrap();
-            (start..=end).map(Id::from_value).collect::<Vec<_>>()
-        })
-        .collect()
+pub fn solve_pt1(ids: &[Id]) -> u64 {
+    ids.iter()
+        .filter(|id| is_repeated_twice(id))
+        .map(|id| id.value())
+        .sum()
 }
+
+pub fn solve_pt2(ids: &[Id]) -> u64 {
+    ids.iter()
+        .filter(|id| is_repeating_pattern(id))
+        .map(|id| id.value())
+        .sum()
+}
+
+fn is_repeated_twice(id: &Id) -> bool {
+    let digits = id.digits();
+    let half = digits.len() / 2;
+    digits.len().is_multiple_of(2) && digits[half..] == digits[..half]
+}
+
+fn is_repeating_pattern(id: &Id) -> bool {
+    let digits = id.digits();
+    let len = digits.len();
+    (1..len / 2 + 1)
+        .filter(|&length| len.is_multiple_of(length))
+        .any(|length| digits.chunks(length).all(|chunk| chunk == &digits[..length]))
+}
+
+// ==========================================
+// Struct Implementation
+// ==========================================
 
 impl Id {
-    fn from_value(value: u64) -> Self {
+    pub const MAX_DIGITS: usize = 20;
+
+    fn from_value(value: &u64) -> Self {
         let text = value.to_string();
-        let mut digits = [0; MAX_DIGITS];
-        let offset = MAX_DIGITS - text.len();
+        let mut digits = [0; Self::MAX_DIGITS];
+        let offset = Self::MAX_DIGITS - text.len();
         for (index, digit) in text.bytes().enumerate() {
             digits[offset + index] = digit - b'0';
         }
@@ -50,25 +61,12 @@ impl Id {
     }
 
     fn value(self) -> u64 {
-        self.digits[MAX_DIGITS - self.len..]
+        self.digits[Self::MAX_DIGITS - self.len..]
             .iter()
             .fold(0, |value, &digit| value * 10 + u64::from(digit))
     }
 
     fn digits(&self) -> &[u8] {
-        &self.digits[MAX_DIGITS - self.len..]
+        &self.digits[Self::MAX_DIGITS - self.len..]
     }
-}
-
-fn is_repeated_twice(id: &Id) -> bool {
-    let digits = id.digits();
-    let half = digits.len() / 2;
-    digits.len() % 2 == 0 && digits[..half] == digits[half..]
-}
-
-fn is_repeating_pattern(id: &Id) -> bool {
-    let digits = id.digits();
-    (1..=digits.len() / 2)
-        .filter(|length| digits.len() % length == 0)
-        .any(|length| digits.chunks(length).all(|chunk| chunk == &digits[..length]))
 }

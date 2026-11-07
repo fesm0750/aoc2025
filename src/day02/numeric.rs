@@ -1,24 +1,11 @@
 //! Numeric implementation: expand ranges into `u64` IDs.
 
-pub fn solve(input: &str) -> (u64, u64) {
-    let ids = parse(input);
-    (
-        ids.iter().filter(|&&id| is_repeated_twice(id)).sum(),
-        ids.iter().filter(|&&id| is_repeating_pattern(id)).sum(),
-    )
+pub fn solve_pt1(ids: &[u64]) -> u64 {
+    ids.iter().filter(|&&id| is_repeated_twice(id)).sum()
 }
 
-fn parse(input: &str) -> Vec<u64> {
-    input
-        .trim()
-        .split(',')
-        .flat_map(|range| {
-            let (start, end) = range.split_once('-').unwrap();
-            let start = start.parse::<u64>().unwrap();
-            let end = end.parse::<u64>().unwrap();
-            start..=end
-        })
-        .collect()
+pub fn solve_pt2(ids: &[u64]) -> u64 {
+    ids.iter().filter(|&&id| is_repeating_pattern(id)).sum()
 }
 
 fn is_repeated_twice(id: u64) -> bool {
@@ -31,10 +18,10 @@ fn is_repeating_pattern(id: u64) -> bool {
     let digits = id.ilog10() + 1;
     (1..=digits / 2).filter(|&length| digits % length == 0).any(|length| {
         let pattern = id % 10u64.pow(length);
-        (0..digits / length)
+        let reconstructed = (0..digits / length)
             .map(|position| pattern * 10u64.pow(length * position))
-            .sum::<u64>()
-            == id
+            .sum::<u64>();
+        id == reconstructed
     })
 }
 
@@ -48,7 +35,9 @@ mod tests {
 
     #[test]
     fn solves_both_parts() {
-        assert_eq!(solve(INPUT), (1227775554, 4174379265));
+        let ids = crate::day02::parse(INPUT);
+        assert_eq!(solve_pt1(&ids), 1227775554);
+        assert_eq!(solve_pt2(&ids), 4174379265);
     }
 
     #[test]

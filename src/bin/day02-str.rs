@@ -1,5 +1,10 @@
 //! Day 2 using string IDs.
+use aoc2025::Runner;
+use aoc2025::day02;
 
 fn main() {
-    aoc2025::day02::run(aoc2025::day02::strings::solve);
+    Runner::init("strings", "inputs/day02", day02::strings::parse)
+        .part("pt1", |ids| day02::strings::solve_pt1(ids))
+        .part("pt2", |ids| day02::strings::solve_pt2(ids))
+        .finish();
 }
