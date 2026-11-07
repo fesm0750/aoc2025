@@ -20,16 +20,13 @@
 //! Tracks dial in signed range (-100, 100) instead of canonical [0, 100), avoiding
 //! Euclidean modulo overhead. This works because the target position zero is uniquely
 //! stable in both Euclidean and symmetric forms, enabling direct use of the `%` operator.
-//!
-//! - Rotating Right adds positive offsets; Left adds negative.
-use std::fs;
+use aoc2025::Runner;
 
 pub fn main() {
-    let input = fs::read_to_string("inputs/day01").unwrap();
-    let rotations = parse_input(&input);
-
-    println!("answer pt1: {}", solve_pt1(&rotations));
-    println!("answer pt2: {}", solve_pt2(&rotations));
+    Runner::init("", "inputs/day01", parse_input)
+        .part("pt1", |rotations| solve_pt1(rotations))
+        .part("pt2", |rotations| solve_pt2(rotations))
+        .finish();
 }
 
 /// Parses a list of signed rotation offsets from ASCII input.
