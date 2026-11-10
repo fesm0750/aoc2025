@@ -2,20 +2,23 @@
 //! <https://adventofcode.com/2025/day/3>
 
 use std::cmp::Ordering::*;
-use std::fs;
+
+use aoc2025::Runner;
 
 const BANK_SIZE: usize = 100;
+const SUB_SIZE_PT1: usize = 2;
+const SUB_SIZE_PT2: usize = 12;
 
 pub fn main() {
-    let input = fs::read_to_string("inputs/day03").unwrap();
-    let banks = parse_input::<BANK_SIZE>(&input);
-
-    println!("answer pt1: {}", pt1(&banks));
-    println!("answer pt2: {}", pt2(&banks));
+    Runner::init("", "inputs/day03", parser::<BANK_SIZE>)
+        .part1(|banks| total_joltage::<BANK_SIZE, SUB_SIZE_PT1>(banks))
+        .part2(|banks| total_joltage::<BANK_SIZE, SUB_SIZE_PT2>(banks))
+        .finish();
 }
 
-fn parse_input<const N: usize>(s: &str) -> Vec<[u8; N]> {
-    s.lines()
+fn parser<const N: usize>(input: &str) -> Vec<[u8; N]> {
+    input
+        .lines()
         .map(|line| {
             line.chars()
                 .filter_map(|c| c.to_digit(10))
@@ -27,7 +30,39 @@ fn parse_input<const N: usize>(s: &str) -> Vec<[u8; N]> {
         .collect()
 }
 
-fn pt1<const N: usize>(banks: &[[u8; N]]) -> u64 {
+fn max_subsequence<const N: usize, const M: usize>(bank: &[u8; N]) -> [u8; M] {
+    let mut sub = [0u8; M];
+    sub.copy_from_slice(&bank[N - M..N]);
+
+    for &curr in bank[0..N - M].iter().rev() {
+        let mut aux = curr;
+        for b in sub.iter_mut() {
+            match aux.cmp(b) {
+                Greater => std::mem::swap(&mut *b, &mut aux),
+                Less => break,
+                Equal => continue,
+            }
+        }
+    }
+
+    sub
+}
+
+fn total_joltage<const N: usize, const M: usize>(banks: &[[u8; N]]) -> u64 {
+    let digits_to_integer = |d: [u8; M]| {
+        d.iter()
+            .rev()
+            .enumerate()
+            .map(|(i, &d)| d as u64 * 10u64.pow(i as u32))
+            .sum::<u64>()
+    };
+
+    banks.iter().map(max_subsequence).map(digits_to_integer).sum()
+}
+
+/// Original pt1 function specialized for a subsequence of size 2
+#[allow(dead_code)]
+fn pt1_old<const N: usize>(banks: &[[u8; N]]) -> u64 {
     let mut total_joltage = 0;
     for bank in banks {
         let (mut n1, mut n0) = (0, 0);
@@ -47,38 +82,6 @@ fn pt1<const N: usize>(banks: &[[u8; N]]) -> u64 {
     total_joltage
 }
 
-fn pt2<const N: usize>(banks: &[[u8; N]]) -> u64 {
-    const SIZE: usize = 12;
-    let mut total_joltage = 0;
-
-    for bank in banks {
-        let mut joltage = [0u8; SIZE];
-        joltage.copy_from_slice(&bank[N - SIZE..N]);
-
-        for &curr in bank[0..N - SIZE].iter().rev() {
-            let mut aux = curr;
-            for b in joltage.iter_mut() {
-                match aux.cmp(b) {
-                    Greater => std::mem::swap(&mut *b, &mut aux),
-                    Less => break,
-                    Equal => continue,
-                }
-            }
-        }
-
-        let joltage = joltage
-            .iter()
-            .rev()
-            .enumerate()
-            .map(|(i, &d)| d as u64 * 10u64.pow(i as u32))
-            .sum::<u64>();
-
-        total_joltage += joltage;
-    }
-
-    total_joltage
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -88,17 +91,19 @@ mod tests {
 234234234234278
 818181911112111";
 
+    const LINE_LEN: usize = 15;
+
     #[test]
-    fn test_pt1() {
-        let ranges = parse_input::<15>(INPUT);
-        let total = pt1(&ranges);
-        assert_eq!(total, 357);
+    fn test_total_joltage() {
+        let ranges = parser::<LINE_LEN>(INPUT);
+        assert_eq!(357, total_joltage::<LINE_LEN, SUB_SIZE_PT1>(&ranges)); // pt1 test
+        assert_eq!(3121910778619, total_joltage::<LINE_LEN, SUB_SIZE_PT2>(&ranges)); // pt2 test
     }
 
     #[test]
-    fn test_pt2() {
-        let ranges = parse_input::<15>(INPUT);
-        let total = pt2(&ranges);
-        assert_eq!(total, 3121910778619);
+    fn test_pt1_old() {
+        let ranges = parser::<LINE_LEN>(INPUT);
+        let total = pt1_old(&ranges);
+        assert_eq!(total, 357);
     }
 }
