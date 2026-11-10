@@ -11,30 +11,32 @@
 //! A tile is considered accessible or with removable contents if it has fewer than 4
 //! occupied neighbours across its 8 adjacent positions.
 use aoc_tools::{grid::Grid, pair::Pair};
-use std::fs;
+use aoc2025::Runner;
 
 type Index = Pair<usize>;
 
 pub fn main() {
-    let input = fs::read_to_string("inputs/day04").unwrap();
-    let mut grid = parse_input(&input);
+    Runner::init("", "inputs/day04", parser).solve(solve);
+}
 
+fn solve(grid: &mut Grid<Tile>) -> (usize, usize) {
     // --- Part 1 ---
-    let to_remove = collect_accessible(&grid);
-    println!("answer pt1: {}", to_remove.len());
+    let accessible = list_accessible(grid);
+    let n_accessible = accessible.len();
 
     // --- Part 2 ---
-    let mut total_removed = to_remove.len();
-    clear_tiles(&mut grid, &to_remove);
+    let mut total_removed = n_accessible;
+    clear_tiles(grid, &accessible);
     loop {
-        let to_remove = collect_accessible(&grid);
+        let to_remove = list_accessible(grid);
         if to_remove.is_empty() {
             break;
         }
         total_removed += to_remove.len();
-        clear_tiles(&mut grid, &to_remove);
+        clear_tiles(grid, &to_remove);
     }
-    println!("answer pt2: {}", total_removed);
+
+    (n_accessible, total_removed)
 }
 
 /// Parses ASCII input into a bordered grid representation.
@@ -44,7 +46,7 @@ pub fn main() {
 /// Tile symbols:
 /// '.': empty;
 /// '@': occupied.
-fn parse_input(input: &str) -> Grid<Tile> {
+fn parser(input: &str) -> Grid<Tile> {
     let len_x = input.lines().next().unwrap().len();
 
     let iter = input
@@ -58,7 +60,7 @@ fn parse_input(input: &str) -> Grid<Tile> {
 /// Returns a list of all coordinates currently accessible for removal.
 ///
 /// A tile qualify for removal if it has fewer than 4 occupied neighbours.
-fn collect_accessible(grid: &Grid<Tile>) -> Vec<Index> {
+fn list_accessible(grid: &Grid<Tile>) -> Vec<Index> {
     let len_x = grid.len_x - 1;
     let len_y = grid.len_y - 1;
 
