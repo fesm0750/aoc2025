@@ -75,6 +75,23 @@ impl<T> Runner<T> {
         self.part("pt2", f)
     }
 
+    /// Executes a complete solution when input data needs to mutate and logs the result
+    /// and time measurement, concluding the run.
+    pub fn solve<R: Display>(mut self, f: impl FnOnce(&mut T) -> (R, R)) {
+        let start = Instant::now();
+        let res = f(&mut self.data);
+        println!(
+            "| {:8} | {:>12.4?} | {}\n| {:8} |      **      | {}",
+            "pt1",
+            start.elapsed(),
+            res.0,
+            "pt2",
+            res.1
+        );
+
+        self.finish();
+    }
+
     /// Concludes the run, printing the total elapsed time and table footer.
     pub fn finish(self) {
         println!("| -------- | ------------ | ------------");
