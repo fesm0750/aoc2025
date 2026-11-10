@@ -1,24 +1,23 @@
 //! # Day 7: Laboratories
 //! <https://adventofcode.com/2025/day/7>
 
-use std::fs;
-
 use Manifold::*;
 use aoc_tools::grid::Grid;
+use aoc2025::Runner;
 
 pub fn main() {
-    let input = fs::read_to_string("inputs/day07").unwrap();
-    let mut field = parse_input(&input);
-
-    shoot_beam(&mut field);
-    println!("answer pt1: {}", count_splits(&field));
-    println!("answer pt2: {}", count_timelines(&field));
+    Runner::init("", "inputs/day07", parser)
+        .part1(count_splits)
+        .part2(count_timelines)
+        .finish();
 }
 
-fn parse_input(input: &str) -> Grid<Manifold> {
+fn parser(input: &str) -> Grid<Manifold> {
     let len_x = input.split_once('\n').unwrap().0.len();
     let vec: Vec<Manifold> = input.chars().flat_map(Manifold::from_char).collect();
-    Grid::with_borders(len_x, Empty, 1, vec)
+    let mut grid = Grid::with_borders(len_x, Empty, 1, vec);
+    shoot_beam(&mut grid);
+    grid
 }
 
 fn shoot_beam(field: &mut Grid<Manifold>) {
@@ -27,6 +26,7 @@ fn shoot_beam(field: &mut Grid<Manifold>) {
             let curr = field[(col, row)];
             let below = field.get_mut(col, row + 1);
 
+            // helper tile update function
             let update = |upd: &mut Manifold, n: u64| {
                 if let Beam(m) = upd {
                     *upd = Beam(n + *m);
@@ -118,8 +118,7 @@ mod tests {
 ...............
 .^.^.^.^.^...^.
 ...............";
-        let mut field = parse_input(input);
-        shoot_beam(&mut field);
+        let field = parser(input);
         assert_eq!(21, count_splits(&field));
         assert_eq!(40, count_timelines(&field));
     }
