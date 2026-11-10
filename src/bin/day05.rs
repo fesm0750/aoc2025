@@ -1,13 +1,22 @@
 //! # Day 5: Cafeteria
 //! <https://adventofcode.com/2025/day/5>
+use std::cmp::Ordering::Equal;
 
-use std::fs;
+use aoc2025::Runner;
 
 type IdRange = (u64, u64);
+type Data = (Vec<IdRange>, Vec<u64>);
 
 pub fn main() {
-    let input = fs::read_to_string("inputs/day05").unwrap();
-    let (ranges, ids) = input.split_once("\n\n").unwrap();
+    Runner::init("", "inputs/day05", parser)
+        .part1(|data| count_fresh_ids(&data.0, &data.1))
+        .part2(|data| flatten_ranges_and_count(&data.0))
+        .finish();
+}
+
+fn parser(raw: &str) -> Data {
+    let (ranges, ids) = raw.split_once("\n\n").unwrap();
+    let ids: Vec<u64> = ids.lines().flat_map(str::parse).collect();
 
     let mut ranges: Vec<IdRange> = ranges
         .lines()
@@ -16,37 +25,38 @@ pub fn main() {
         .collect();
     ranges.sort_unstable();
 
-    let ids: Vec<u64> = ids.lines().flat_map(str::parse).collect();
-
-    println!("answer pt1: {}", count_fresh_ids(&ids, &ranges));
-    println!("answer pt2: {}", flatten_ranges(&ranges).count());
+    (ranges, ids)
 }
 
-fn is_fresh_id(id: &u64, ranges: &[IdRange]) -> bool {
-    ranges.iter().any(|(left, right)| left <= id && id <= right)
+fn count_fresh_ids(ranges: &[IdRange], ids: &[u64]) -> u64 {
+    let is_fresh_id = |id| ranges.iter().any(|(left, right)| left <= id && id <= right);
+    ids.iter().filter(|id| is_fresh_id(id)).count() as u64
 }
 
-fn count_fresh_ids(ids: &[u64], ranges: &[IdRange]) -> u64 {
-    ids.iter().filter(|id| is_fresh_id(id, ranges)).count() as u64
-}
-
+/// Generates an iterator with all unique `ids` belonging to the given ranges.
 /// Assumes zero does not belong to any range.
-fn flatten_ranges(sorted_ranges: &[IdRange]) -> impl Iterator<Item = u64> {
-    let mut last = 0;
+fn flatten_ranges_and_count(sorted_ranges: &[IdRange]) -> u64 {
+    assert!(sorted_ranges.is_sorted(), "ranges are not sorted.");
+
+    let mut last = 0; // last generated element
     sorted_ranges
         .iter()
         .flat_map(move |&r| {
-            let range = if last >= r.1 {
-                None
-            } else if last >= r.0 {
-                Some(last + 1..r.1 + 1)
+            // ranges are sorted, current first element is always equal or
+            // greater than the previous first
+            let range = if r.0 > last {
+                Some(r.0..r.1 + 1) // new unique range
+            } else if r.1 > last {
+                Some(last + 1..r.1 + 1) // intersection, generate remaining
             } else {
-                Some(r.0..r.1 + 1)
+                None // subset, already generated
             };
+
             last = last.max(r.1);
             range
         })
         .flatten()
+        .count() as u64
 }
 
 #[cfg(test)]
@@ -55,8 +65,11 @@ mod tests {
 
     #[test]
     fn test_squash_ranges() {
-        let mut ranges = [(3, 5), (10, 14), (16, 20), (12, 18)];
+        let mut ranges = [(3, 5), (10, 14), (16, 20), (12, 18)]; // new range, subset
         ranges.sort_unstable();
-        assert_eq!(14, flatten_ranges(&ranges).count());
+        assert_eq!(14, flatten_ranges_and_count(&ranges));
+
+        let sorted = [(3, 5), (10, 16), (12, 20), (14, 18)]; // new range, intersection, subsect
+        assert_eq!(14, flatten_ranges_and_count(&sorted));
     }
 }
