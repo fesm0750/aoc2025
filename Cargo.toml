@@ -6,4 +6,5 @@ edition = "2024"
 [workspace]
 
 [dependencies]
-aoc_tools = { git = "https://github.com/fesm0750/aoc_tools" }
+rustc-hash = "2.1.3"
+aoc_tools = { path = "../aoc_tools" }
