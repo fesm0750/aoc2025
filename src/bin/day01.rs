@@ -23,9 +23,9 @@
 use aoc2025::Runner;
 
 pub fn main() {
-    Runner::init("", "inputs/day01", parse_input)
-        .part("pt1", |rotations| solve_pt1(rotations))
-        .part("pt2", |rotations| solve_pt2(rotations))
+    Runner::init("", "inputs/day01", parser)
+        .part1(|rotations| solve_pt1(rotations))
+        .part2(|rotations| solve_pt2(rotations))
         .finish();
 }
 
@@ -45,7 +45,7 @@ pub fn main() {
 /// let rotations = parse_input(input);
 /// assert_eq!(rotations, vec![16, -100, 5]);
 /// ```
-fn parse_input(input: &str) -> Vec<i16> {
+fn parser(input: &str) -> Vec<i16> {
     input
         .lines()
         .map(|s| {
@@ -140,7 +140,7 @@ L82";
 
     #[test]
     fn test_parse_input() {
-        let input = parse_input(INPUT);
+        let input = parser(INPUT);
         assert_eq!(input, ROTATIONS);
     }
 

@@ -65,6 +65,16 @@ impl<T> Runner<T> {
         self
     }
 
+    /// Executes and logs part 1 solution.
+    pub fn part1<R: Display>(self, f: impl FnOnce(&T) -> R) -> Self {
+        self.part("pt1", f)
+    }
+
+    /// Executes and logs part 2 solution.
+    pub fn part2<R: Display>(self, f: impl FnOnce(&T) -> R) -> Self {
+        self.part("pt2", f)
+    }
+
     /// Concludes the run, printing the total elapsed time and table footer.
     pub fn finish(self) {
         println!("| -------- | ------------ | ------------");

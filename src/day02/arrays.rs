@@ -8,8 +8,8 @@ pub struct Id {
     len: usize,
 }
 
-pub fn parse(path: &str) -> Vec<Id> {
-    day02::parse(path).iter().map(Id::from_value).collect()
+pub fn parser(input: &str) -> Vec<Id> {
+    day02::parser(input).iter().map(Id::from_value).collect()
 }
 
 pub fn solve_pt1(ids: &[Id]) -> u64 {

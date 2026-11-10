@@ -35,7 +35,7 @@ mod tests {
 
     #[test]
     fn solves_both_parts() {
-        let ids = crate::day02::parse(INPUT);
+        let ids = crate::day02::parser(INPUT);
         assert_eq!(solve_pt1(&ids), 1227775554);
         assert_eq!(solve_pt2(&ids), 4174379265);
     }

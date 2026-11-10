@@ -2,8 +2,8 @@
 
 use crate::day02;
 
-pub fn parse(path: &str) -> Vec<String> {
-    day02::parse(path).iter().map(|id| id.to_string()).collect()
+pub fn parser(input: &str) -> Vec<String> {
+    day02::parser(input).iter().map(|id| id.to_string()).collect()
 }
 
 pub fn solve_pt1(ids: &[String]) -> u64 {
