@@ -46,7 +46,7 @@ impl Runner<()> {
         println!("\n{:^39}", format!("{day} {name}"));
         println!("|   step   |     time     |    answer");
         println!("| -------- | ------------ | ------------ ");
-        println!("| Parse    |{:>12.4?}  |", elapsed);
+        println!("| Parse    | {:>12.4?} |", elapsed);
 
         Runner { data, total_start }
     }
@@ -60,14 +60,14 @@ impl<T> Runner<T> {
     pub fn part<R: Display>(self, name: &str, f: impl FnOnce(&T) -> R) -> Self {
         let start = Instant::now();
         let res = f(&self.data);
-        println!("| {name:8} |{:>12.4?}  | {res}", start.elapsed());
+        println!("| {name:8} | {:>12.4?} | {res}", start.elapsed());
 
         self
     }
 
     /// Concludes the run, printing the total elapsed time and table footer.
     pub fn finish(self) {
-        println!("| -------- | ------------ | ------------ ");
-        println!("| Total    |{:>12.4?}  |\n", self.total_start.elapsed());
+        println!("| -------- | ------------ | ------------");
+        println!("| Total    | {:>12.4?} |\n", self.total_start.elapsed());
     }
 }
